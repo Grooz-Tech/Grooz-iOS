@@ -1,0 +1,15 @@
+name: Test Workflow
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: tartelet
+    steps:
+      - name: Do something for 10 seconds
+        run: |
+          echo "Starting work on tartelet runner..."
+          sleep 10
+          echo "Done!"
