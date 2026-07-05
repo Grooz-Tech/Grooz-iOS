@@ -6,15 +6,14 @@ let appBundleId = "tech.grooz.app"
 
 let appDisplayName = "Grooz"
 
-let appVersion = "1.0.0"
-
+// MARKETING_VERSION comes from Version.xcconfig (source of truth, bumped per release).
+// Build number is supplied by CI via TUIST_CURRENT_PROJECT_VERSION (github.run_number).
 let buildNumber = Environment.currentProjectVersion.getString(default: "1")
 
 let appSigningSettings = Settings.settings(
     base: [
         "DEVELOPMENT_TEAM": .string(teamId),
         "CODE_SIGN_STYLE": "Manual",
-        "MARKETING_VERSION": .string(appVersion),
         "CURRENT_PROJECT_VERSION": .string(buildNumber),
         "INFOPLIST_KEY_CFBundleDisplayName": .string(appDisplayName),
     ],
@@ -24,14 +23,16 @@ let appSigningSettings = Settings.settings(
             settings: [
                 "CODE_SIGN_IDENTITY": "Apple Development",
                 "PROVISIONING_PROFILE_SPECIFIER": "match Development \(appBundleId)",
-            ]
+            ],
+            xcconfig: "Version.xcconfig"
         ),
         .release(
             name: "Release",
             settings: [
                 "CODE_SIGN_IDENTITY": "Apple Distribution",
                 "PROVISIONING_PROFILE_SPECIFIER": "match AppStore \(appBundleId)",
-            ]
+            ],
+            xcconfig: "Version.xcconfig"
         ),
     ]
 )
