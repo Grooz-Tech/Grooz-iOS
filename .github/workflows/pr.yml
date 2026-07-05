@@ -14,6 +14,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Configure git auth
+        uses: ./.github/actions/git-auth
+        with:
+          token: ${{ secrets.GIT_AUTH_TOKEN }}
+
+      - name: Install dependencies
+        run: tuist install
+
       - name: Generate Xcode project
         run: tuist generate --no-open
 

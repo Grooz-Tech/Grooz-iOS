@@ -27,6 +27,9 @@ jobs:
         with:
           token: ${{ secrets.GIT_AUTH_TOKEN }}
 
+      - name: Install dependencies
+        run: tuist install
+
       - name: Generate Xcode project
         run: tuist generate --no-open
 
