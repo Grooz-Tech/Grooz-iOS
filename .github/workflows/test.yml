@@ -12,9 +12,23 @@ concurrency:
 jobs:
   test:
     runs-on: tartelet
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate Xcode project
+        run: tuist generate --no-open
+
+      - name: Run tests
+        run: fastlane test
+
+  beta:
+    runs-on: tartelet
+    needs: test
+    environment: testflight
     env:
       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-      APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_KEY_B64 }}
+      APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_API_KEY_ADMIN_B64 }}
       # Monotonic build number for the TestFlight upload (Project.swift reads this).
       TUIST_CURRENT_PROJECT_VERSION: ${{ github.run_number }}
     steps:
@@ -26,14 +40,8 @@ jobs:
         with:
           token: ${{ secrets.GIT_AUTH_TOKEN }}
 
-      - name: Fetch signing assets (read-only)
-        run: fastlane certificates
-
       - name: Generate Xcode project
         run: tuist generate --no-open
 
-      - name: Run tests
-        run: fastlane test
-
-      - name: Upload to TestFlight
+      - name: Build and upload to TestFlight
         run: fastlane beta
