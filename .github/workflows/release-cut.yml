@@ -42,7 +42,7 @@ jobs:
         run: |
           set -euo pipefail
           git switch develop
-          sed -i "s/^MARKETING_VERSION = .*/MARKETING_VERSION = $NEXT/" Version.xcconfig
+          ./scripts/set-version.sh "$NEXT"
           git commit -am "chore(version): bump develop to $NEXT"
           git push origin develop
 
