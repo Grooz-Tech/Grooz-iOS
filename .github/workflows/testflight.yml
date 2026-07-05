@@ -1,8 +1,14 @@
 name: TestFlight
 
 on:
-  push:
+  pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      changelog:
+        description: TestFlight "What to Test" notes (manual runs)
+        required: false
+        type: string
 
 concurrency:
   group: testflight-${{ github.ref }}
@@ -15,9 +21,10 @@ jobs:
       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
       APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_API_KEY_ADMIN_B64 }}
       # Monotonic build number for the TestFlight upload (Project.swift reads this).
+      # Marketing version comes from Version.xcconfig.
       TUIST_CURRENT_PROJECT_VERSION: ${{ github.run_number }}
-      # TestFlight "What to Test" — the squash-merge commit message (PR title + body).
-      PILOT_CHANGELOG: ${{ github.event.head_commit.message }}
+      # TestFlight "What to Test": manual input if provided, else the PR description.
+      PILOT_CHANGELOG: ${{ inputs.changelog || github.event.pull_request.body }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
