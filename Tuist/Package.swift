@@ -15,8 +15,8 @@ import PackageDescription
 let package = Package(
     name: "Grooz",
     dependencies: [
-        // Add your own dependencies here:
-        // .package(url: "https://github.com/Alamofire/Alamofire", from: "5.0.0"),
-        // You can read more about dependencies here: https://docs.tuist.io/documentation/tuist/dependencies
+        .package(url: "https://github.com/groue/GRDB.swift", exact: "7.11.1"),
+        .package(url: "https://github.com/Alamofire/Alamofire", exact: "5.12.0"),
+        .package(url: "https://github.com/apple/swift-collections", exact: "1.6.0"),
     ]
 )

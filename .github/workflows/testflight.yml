@@ -1,36 +1,23 @@
-name: CI
+name: TestFlight
 
 on:
   push:
-  pull_request:
-  workflow_dispatch:
+    branches: [main]
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: testflight-${{ github.ref }}
 
 jobs:
-  test:
+  deploy:
     runs-on: tartelet
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Generate Xcode project
-        run: tuist generate --no-open
-
-      - name: Run tests
-        run: fastlane test
-
-  beta:
-    runs-on: tartelet
-    needs: test
     environment: testflight
     env:
       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
       APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_API_KEY_ADMIN_B64 }}
       # Monotonic build number for the TestFlight upload (Project.swift reads this).
       TUIST_CURRENT_PROJECT_VERSION: ${{ github.run_number }}
+      # TestFlight "What to Test" — the squash-merge commit message (PR title + body).
+      PILOT_CHANGELOG: ${{ github.event.head_commit.message }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -43,5 +30,8 @@ jobs:
       - name: Generate Xcode project
         run: tuist generate --no-open
 
-      - name: Build and upload to TestFlight
-        run: fastlane beta
+      - name: Build
+        run: fastlane build
+
+      - name: Upload to TestFlight
+        run: fastlane deploy

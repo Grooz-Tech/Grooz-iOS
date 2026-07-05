@@ -60,7 +60,11 @@ let project = Project(
                 "Grooz/Sources",
                 "Grooz/Resources",
             ],
-            dependencies: [],
+            dependencies: [
+                .external(name: "GRDB"),
+                .external(name: "Alamofire"),
+                .external(name: "Collections"),
+            ],
             settings: appSigningSettings
         ),
         .target(
