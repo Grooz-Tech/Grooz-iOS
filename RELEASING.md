@@ -1,57 +1,58 @@
 # Releasing
 
-GitFlow release process. Weekly cadence: a `release/*` branch is cut from
-`develop` (currently manual; automation planned).
+GitFlow release process. Most of it is automated by GitHub Actions; this
+describes what the automation does and the few manual approval/submit steps.
 
 ## Versioning
 
 - **Marketing version** (`MARKETING_VERSION`) lives in `Version.xcconfig` — the
   single source of truth. Bumped when cutting a release.
-- **Build number** (`CURRENT_PROJECT_VERSION`) is set by CI from
-  `github.run_number` — never edited by hand.
+- **Build number** (`CURRENT_PROJECT_VERSION`) is set by CI, never edited by
+  hand: TestFlight uses `run_number + 1000`, App Store uses `run_number + 100`.
 - `develop` always carries the **next** version and runs one minor ahead of the
   last release.
 
-## Cut a release (weekly, from `develop`)
+## 1. Cut a release — automated (`release-cut.yml`)
 
-Say `develop` is at `1.4.0`.
+Runs automatically **every Wednesday 06:00 UTC**, or manually via
+**Actions → Release Cut → Run workflow** (with an optional version override).
 
-```bash
-git checkout develop && git pull
+It does, from `develop`:
+1. Reads the version from `Version.xcconfig` (e.g. `1.4.0`).
+2. Creates `release/1.4.0`.
+3. Pushes a direct version bump to `develop` → next minor (`1.5.0`).
+4. Opens the PR **`release/1.4.0` → `main`** (title `Release 1.4.0`).
 
-# 1. Cut the release branch (inherits develop's version, 1.4.0).
-git checkout -b release/1.4.0
-git push -u origin release/1.4.0
-```
+No manual branch creation or develop bump needed.
 
-Opening a PR **`release/1.4.0` → `main`** triggers the TestFlight workflow: it
-builds the release candidate and uploads it to TestFlight (the PR description
-becomes the "What to Test" notes).
+## 2. Stabilize on the release branch
 
-```bash
-# 2. Immediately bump develop to the next minor, so it's ready for the next cut.
-git checkout develop
-# edit Version.xcconfig -> MARKETING_VERSION = 1.5.0
-git checkout -b feature/bump-develop-1.5.0
-git commit -am "chore(version): bump develop to 1.5.0"
-git push -u origin feature/bump-develop-1.5.0
-# open PR into develop
-```
+- The `release/1.4.0 → main` PR triggers **`testflight.yml`**: it builds the
+  release candidate and uploads it to TestFlight. The PR description becomes the
+  "What to Test" notes — so **write release notes in the PR description**.
+- Fixes go on `release/1.4.0` (branch from it, PR back into it). Each update to
+  the release PR re-uploads a new TestFlight build.
 
-## Stabilize & ship
+## 3. Ship — merge to `main`
 
-- Fixes for the release go on `release/1.4.0` (branch from it, PR back into it).
-  Each PR update re-uploads a new TestFlight build.
-- When the release is approved:
-  1. Merge the `release/1.4.0 → main` PR (squash).
-  2. Tag `main`: `git tag -a v1.4.0 -m "Release 1.4.0" && git push origin v1.4.0`.
-  3. Merge the release branch back into `develop` (keep develop's higher
-     version — do not let it revert to 1.4.0).
-  4. Delete the release branch.
+Merge the `release/1.4.0 → main` PR (squash). On the push to `main`, two
+workflows run automatically:
+
+- **`tag-and-backmerge.yml`** — tags `v1.4.0` and back-merges `main` into
+  `develop` (keeping develop's higher version).
+- **`appstore.yml`** — builds and uploads the build to App Store Connect
+  (`fastlane release`, no submit). This job is gated by the **`appstore`**
+  environment (required reviewer, `main` only), so **it waits for your approval**
+  in the Actions UI.
+
+## 4. Submit for review — manual
+
+`appstore.yml` uploads the build but does **not** submit. To release:
+1. Ensure the version's metadata/screenshots/what's-new are complete in App
+   Store Connect.
+2. Select the uploaded build and press **Submit for Review** in the ASC UI.
 
 ## Hotfix (urgent production fix)
-
-`main` is at `v1.4.0`:
 
 ```bash
 git checkout main && git pull
@@ -60,12 +61,16 @@ git checkout -b hotfix/1.4.1
 git push -u origin hotfix/1.4.1
 ```
 
-- PR `hotfix/1.4.1` → `main` (builds/uploads to TestFlight for verification).
-- On merge: tag `v1.4.1`, then merge into `develop` (keeping develop's higher
-  version).
+- Open PR `hotfix/1.4.1 → main`. It builds/uploads to TestFlight for
+  verification (same as a release PR).
+- On merge to `main`, `tag-and-backmerge.yml` tags `v1.4.1` and back-merges into
+  `develop`; `appstore.yml` uploads the build (pending your approval).
 
 ## Notes
 
 - Never edit the build number; CI owns it.
-- The `testflight` GitHub Environment gates TestFlight uploads (required
-  approval), so an RC uploads only after the deploy job is approved.
+- App Store uploads pause for approval via the `appstore` environment; TestFlight
+  uploads are not gated.
+- The release-cut, tag-and-backmerge, and develop-bump steps rely on
+  `GIT_AUTH_TOKEN` having write access and being in the branch-protection bypass
+  list.
