@@ -45,12 +45,16 @@ let project = Project(
             destinations: [.iPhone],
             product: .app,
             bundleId: appBundleId,
+            deploymentTargets: .iOS("18.0"),
             infoPlist: .extendingDefault(
                 with: [
                     "CFBundleDisplayName": "$(INFOPLIST_KEY_CFBundleDisplayName)",
                     "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                     "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
                     "ITSAppUsesNonExemptEncryption": false,
+                    "UISupportedInterfaceOrientations": [
+                        "UIInterfaceOrientationPortrait",
+                    ],
                     "UILaunchScreen": [
                         "UIColorName": "LaunchBackground",
                         "UIImageName": "",
@@ -73,6 +77,7 @@ let project = Project(
             destinations: [.iPhone],
             product: .unitTests,
             bundleId: "\(appBundleId).GroozTests",
+            deploymentTargets: .iOS("18.0"),
             infoPlist: .default,
             buildableFolders: [
                 "Grooz/Tests"
