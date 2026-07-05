@@ -9,7 +9,7 @@ concurrency:
   group: appstore-${{ github.ref }}
 
 jobs:
-  appstore:
+  deploy:
     runs-on: tartelet
     environment: appstore
     env:
@@ -37,6 +37,16 @@ jobs:
 
       - name: Build
         run: fastlane build
+
+      - name: Upload IPA and dSYM
+        uses: actions/upload-artifact@v4
+        with:
+          name: Grooz-${{ env.TUIST_CURRENT_PROJECT_VERSION }}
+          path: |
+            *.ipa
+            *.dSYM.zip
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Upload to App Store Connect (no submit)
         run: fastlane release
