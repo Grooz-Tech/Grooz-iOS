@@ -5,13 +5,17 @@ import GRDB
 final class UserStore {
     private let dbQueue: DatabaseQueue
 
-    init() {
+    /// Uses the on-disk app database by default; tests can inject an in-memory queue.
+    init(dbQueue: DatabaseQueue = UserStore.defaultQueue()) {
+        self.dbQueue = dbQueue
+        try! migrate()
+    }
+
+    private static func defaultQueue() -> DatabaseQueue {
         let url = try! FileManager.default
             .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             .appendingPathComponent("grooz.sqlite")
-
-        dbQueue = try! DatabaseQueue(path: url.path)
-        try! migrate()
+        return try! DatabaseQueue(path: url.path)
     }
 
     private func migrate() throws {
@@ -33,9 +37,9 @@ final class UserStore {
     func replaceAll(_ users: [User]) {
         try? dbQueue.write { db in
             try User.deleteAll(db)
-            for user in users {
-                try user.insert(db)
-            }
+            // Upsert so duplicate emails in a batch overwrite (last write wins)
+            // instead of throwing on the primary-key conflict.
+            try users.forEach { try $0.insert(db, onConflict: .replace) }
         }
     }
 }
