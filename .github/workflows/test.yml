@@ -1,15 +1,35 @@
-name: Test Workflow
+name: CI
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: tartelet
+    env:
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+      APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_KEY_B64 }}
+      # Monotonic build number for the TestFlight upload (Project.swift reads this).
+      TUIST_CURRENT_PROJECT_VERSION: ${{ github.run_number }}
     steps:
-      - name: Do something for 10 seconds
-        run: |
-          echo "Starting work on tartelet runner..."
-          sleep 10
-          echo "Done!"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch signing assets (read-only)
+        run: fastlane certificates
+
+      - name: Generate Xcode project
+        run: tuist generate --no-open
+
+      - name: Run tests
+        run: fastlane test
+
+      - name: Upload to TestFlight
+        run: fastlane beta

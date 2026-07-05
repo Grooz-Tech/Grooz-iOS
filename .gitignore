@@ -30,3 +30,10 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+*.p8
+*.mobileprovision
+*.p12
+
+fastlane/.env
+fastlane/.env.local
