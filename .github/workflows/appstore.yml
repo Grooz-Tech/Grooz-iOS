@@ -1,8 +1,9 @@
 name: App Store
 
 on:
-  push:
-    branches: [main]
+  # Temporarily disabled — manual dispatch only.
+  # push:
+  #   branches: [main]
   workflow_dispatch:
 
 concurrency:
