@@ -6,6 +6,7 @@ on:
 
 concurrency:
   group: pr-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -54,7 +55,7 @@ jobs:
       - name: Upload IPA and dSYM
         uses: actions/upload-artifact@v4
         with:
-          name: Grooz-${{ github.run_number }}
+          name: Grooz-${{ env.TUIST_CURRENT_PROJECT_VERSION }}
           path: |
             *.ipa
             *.dSYM.zip
