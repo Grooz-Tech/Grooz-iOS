@@ -12,14 +12,12 @@
 # When GITHUB_OUTPUT is set (in CI), also appends them there.
 set -eu
 
-xcconfig="Version.xcconfig"
 version="${1:-}"
 
 if [ -z "$version" ]; then
-	version="$(sed -n 's/^MARKETING_VERSION = //p' "$xcconfig" | tr -d '[:space:]')"
-fi
-
-if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+	version="$(dirname "$0")/read-version.sh"
+	version="$("$version")"
+elif ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
 	echo "Invalid version '$version' (expected X.Y.Z)" >&2
 	exit 1
 fi

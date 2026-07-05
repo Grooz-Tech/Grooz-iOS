@@ -26,9 +26,7 @@ jobs:
         run: ./scripts/next-version.sh "${{ inputs.version }}"
 
       - name: Configure git identity
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+        uses: ./.github/actions/git-identity
 
       - name: Create release branch
         env:
@@ -38,28 +36,22 @@ jobs:
           git switch -c "release/$V"
           git push origin "release/$V"
 
-      - name: Create develop-bump branch
+      - name: Bump develop version
         env:
           NEXT: ${{ steps.v.outputs.next }}
         run: |
           set -euo pipefail
           git switch develop
-          git switch -c "feature/bump-develop-$NEXT"
           sed -i "s/^MARKETING_VERSION = .*/MARKETING_VERSION = $NEXT/" Version.xcconfig
           git commit -am "chore(version): bump develop to $NEXT"
-          git push origin "feature/bump-develop-$NEXT"
+          git push origin develop
 
-      - name: Open PRs
+      - name: Open release PR
         env:
           GH_TOKEN: ${{ secrets.GIT_AUTH_TOKEN }}
           V: ${{ steps.v.outputs.version }}
-          NEXT: ${{ steps.v.outputs.next }}
         run: |
           set -euo pipefail
           gh pr create --base main --head "release/$V" \
             --title "Release $V" \
-            --body ""
-
-          gh pr create --base develop --head "feature/bump-develop-$NEXT" \
-            --title "chore(version): bump develop to $NEXT" \
             --body ""
