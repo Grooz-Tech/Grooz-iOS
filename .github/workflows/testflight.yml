@@ -20,14 +20,16 @@ jobs:
     env:
       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
       APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_API_KEY_ADMIN_B64 }}
-      # Build number = run_number + 1000 (TestFlight range, distinct from the
-      # App Store workflow's +100 range). Marketing version from Version.xcconfig.
-      TUIST_CURRENT_PROJECT_VERSION: ${{ github.run_number + 1000 }}
       # TestFlight "What to Test": manual input if provided, else the PR description.
       PILOT_CHANGELOG: ${{ inputs.changelog || github.event.pull_request.body }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # Build number = run_number + 1000 (TestFlight range, distinct from the
+      # App Store workflow's +100 range). Marketing version from Version.xcconfig.
+      - name: Set build number
+        run: echo "TUIST_CURRENT_PROJECT_VERSION=$(( ${{ github.run_number }} + 1000 ))" >> "$GITHUB_ENV"
 
       - name: Configure git auth
         uses: ./.github/actions/git-auth
