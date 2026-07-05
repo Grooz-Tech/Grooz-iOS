@@ -1,0 +1,50 @@
+name: TestFlight
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: testflight-${{ github.ref }}
+
+jobs:
+  deploy:
+    runs-on: tartelet
+    environment: testflight
+    env:
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_API_KEY_ADMIN_B64 }}
+      # Monotonic build number for the TestFlight upload (Project.swift reads this).
+      TUIST_CURRENT_PROJECT_VERSION: ${{ github.run_number }}
+      # TestFlight "What to Test" — the squash-merge commit message (PR title + body).
+      PILOT_CHANGELOG: ${{ github.event.head_commit.message }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure git auth
+        uses: ./.github/actions/git-auth
+        with:
+          token: ${{ secrets.GIT_AUTH_TOKEN }}
+
+      - name: Install dependencies
+        run: tuist install
+
+      - name: Generate Xcode project
+        run: tuist generate --no-open
+
+      - name: Build
+        run: fastlane build
+
+      - name: Upload IPA and dSYM
+        uses: actions/upload-artifact@v4
+        with:
+          name: Grooz-${{ github.run_number }}
+          path: |
+            *.ipa
+            *.dSYM.zip
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Upload to TestFlight
+        run: fastlane deploy
