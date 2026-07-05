@@ -1,0 +1,65 @@
+name: Release Cut
+
+on:
+  schedule:
+    - cron: '0 6 * * 3' # Wednesdays 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version X.Y.Z (default = current MARKETING_VERSION on develop)
+        required: false
+        type: string
+
+jobs:
+  cut:
+    runs-on: tartelet
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.GIT_AUTH_TOKEN }}
+
+      - name: Determine versions
+        id: v
+        run: ./scripts/next-version.sh "${{ inputs.version }}"
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create release branch
+        env:
+          V: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          git switch -c "release/$V"
+          git push origin "release/$V"
+
+      - name: Create develop-bump branch
+        env:
+          NEXT: ${{ steps.v.outputs.next }}
+        run: |
+          set -euo pipefail
+          git switch develop
+          git switch -c "feature/bump-develop-$NEXT"
+          sed -i "s/^MARKETING_VERSION = .*/MARKETING_VERSION = $NEXT/" Version.xcconfig
+          git commit -am "chore(version): bump develop to $NEXT"
+          git push origin "feature/bump-develop-$NEXT"
+
+      - name: Open PRs
+        env:
+          GH_TOKEN: ${{ secrets.GIT_AUTH_TOKEN }}
+          V: ${{ steps.v.outputs.version }}
+          NEXT: ${{ steps.v.outputs.next }}
+        run: |
+          set -euo pipefail
+          gh pr create --base main --head "release/$V" \
+            --title "Release $V" \
+            --body ""
+
+          gh pr create --base develop --head "feature/bump-develop-$NEXT" \
+            --title "chore(version): bump develop to $NEXT" \
+            --body ""
